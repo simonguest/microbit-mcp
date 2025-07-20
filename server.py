@@ -25,6 +25,21 @@ class MicrobitMCPServer:
                     },
                     "required": ["message"]
                 }
+            ),
+            types.Tool(
+               name="display_image",
+               description="Display an image on the micro:bit LED matrix.",
+               inputSchema={
+                  "type": "object",
+                  "properties": {
+                     "image": {
+                        "type": "string",
+                        "description": """A sequence of 5 numbers (0-9), with a colon delimeter for each of the 5 rows in the matrix. 
+                        e.g., 00300:03630:36963:03630:00300 is a star
+                        """
+                     }
+                  }
+               }
             )
         ]
 
@@ -37,6 +52,10 @@ class MicrobitMCPServer:
         message = arguments.get("message", "")
         await self.send_to_microbit(f"DISPLAY:{message}")
         return [types.TextContent(type="text", text=f"Displayed: {message}")]
+      if name == "display_image":
+        image = arguments.get("image", "")
+        await self.send_to_microbit(f"IMAGE:{image}")
+        return [types.TextContent(type="text", text=f"Displayed image")]
       raise ValueError(f"Tool not found: {name}")
   
   # micro:bit specific functions

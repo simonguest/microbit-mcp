@@ -15,6 +15,10 @@ def process_command(cmd):
         message = cmd[8:]
         display.scroll(message)
         send_status_event("displayed:" + message)
+    if cmd.startswith("IMAGE:"):
+        image = cmd[6:]
+        display.show(Image(image))
+        send_status_event("displayed:" + image)
 
 # Startup
 display.show(Image.HAPPY)
