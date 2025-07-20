@@ -1,0 +1,10 @@
+[project]
+name = "microbit-mcp"
+version = "0.1.0"
+description = "MCP Server for the micro:bit"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "mcp[cli]>=1.12.0",
+    "pyserial-asyncio>=0.6",
+]
