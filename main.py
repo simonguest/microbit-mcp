@@ -1,5 +1,5 @@
 # type: ignore
-# flash.py for micro:bit
+# main.py for micro:bit
 from microbit import *
 
 def send_status_event(message):
@@ -19,6 +19,12 @@ def process_command(cmd):
         image = cmd[6:]
         display.show(Image(image))
         send_status_event("displayed:" + image)
+    if cmd.startswith("TEMP:"):
+        temp_celsius = temperature()
+        timestamp = running_time()
+        # Format: TEMP|temperature|timestamp
+        temp_response = "TEMP|" + str(temp_celsius) + "|" + str(timestamp)
+        print(temp_response)
 
 # Startup
 display.show(Image.HAPPY)
