@@ -50,7 +50,7 @@ class MicrobitMCPServer:
     ) -> list[types.TextContent]:
       if name == "display_message":
         message = arguments.get("message", "")
-        await self.send_to_microbit(f"DISPLAY:{message}")
+        await self.send_to_microbit(f"MESSAGE:{message}")
         return [types.TextContent(type="text", text=f"Displayed: {message}")]
       if name == "display_image":
         image = arguments.get("image", "")

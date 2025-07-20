@@ -11,7 +11,7 @@ def send_status_event(message):
 
 def process_command(cmd):
     """Process commands from MCP server"""
-    if cmd.startswith("DISPLAY:"):
+    if cmd.startswith("MESSAGE:"):
         message = cmd[8:]
         display.scroll(message)
         send_status_event("displayed:" + message)
