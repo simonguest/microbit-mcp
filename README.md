@@ -42,3 +42,12 @@ The server communicates with the micro:bit using simple text commands over seria
 The micro:bit responds with status events and data in the format:
 - `STATUS|<message>|<timestamp>` - General status updates
 - `TEMP|<celsius>|<timestamp>` - Temperature response
+
+## Using the MCP Inspector
+
+To test/debug the server, you can also use the MCP Inspector. To launch the inspector:
+
+1. Run `npx @modelcontextprotocol/inspector` (recommend LTS-version of Node)
+2. The inspector will launch in a new browser window.
+3. Set transport type to STDIO, command is the full path to your uv binary (e.g., `/Users/yourname/.local/bin/uv`), arguments is `--directory /full-path-to-the-mcp-server run server.py`
+4. Click on the Connect button to connect and inspect the MCP server.
