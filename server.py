@@ -41,6 +41,26 @@ class MicrobitMCPServer:
                      }
                   }
                }
+            ),
+            types.Tool(
+                name="wait_for_button_press",
+                description="Wait for a button press on the micro:bit",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "button": {
+                            "type": "string",
+                            "enum": ["a", "b"],
+                            "description": "Which specific button to wait for. If not specified, waits for any button press."
+                        },
+                        "timeout": {
+                            "type": "number",
+                            "default": 10.0,
+                            "description": "Maximum time to wait in seconds"
+                        }
+                    },
+                    "required": []
+                }
             )
         ]
 
@@ -57,6 +77,11 @@ class MicrobitMCPServer:
         image = arguments.get("image", "")
         await self.send_to_microbit(f"IMAGE:{image}")
         return [types.TextContent(type="text", text=f"Displayed image")]
+      if name == "wait_for_button_press":
+        button = arguments.get("button", "any")
+        timeout = arguments.get("timeout", 10.0)
+        result = await self.wait_for_button_press(button, timeout)
+        return [types.TextContent(type="text", text=json.dumps(result))]
       raise ValueError(f"Tool not found: {name}")
 
     @self.app.list_resources()
@@ -126,6 +151,63 @@ class MicrobitMCPServer:
                         "timestamp": timestamp
                     }
         # Continue reading if not a temperature response
+
+  async def wait_for_button_press(self, button, timeout):
+    """Wait for a button press on the micro:bit"""
+    if not self.reader or not self.writer:
+        raise Exception("Serial connection not established")
+    
+    # Send button wait request
+    await self.send_to_microbit(f"WAIT_BUTTON:{button}:{timeout}")
+    
+    # Wait for response with timeout
+    try:
+        response = await asyncio.wait_for(self.read_button_response(button), timeout=timeout + 1.0)
+        return response
+    except asyncio.TimeoutError:
+        return {
+            "button_pressed": None,
+            "timeout": True,
+            "timestamp": None,
+            "waited_for": button,
+            "timeout_duration": timeout
+        }
+
+  async def read_button_response(self, expected_button):
+    """Read and parse button response from micro:bit"""
+    while True:
+        line = await self.reader.readline()
+        if line:
+            response = line.decode('utf-8').strip()
+            if response.startswith("BUTTON|"):
+                # Parse: BUTTON|button|action|timestamp
+                parts = response.split("|")
+                if len(parts) >= 4:
+                    button_pressed = parts[1]
+                    action = parts[2]
+                    timestamp = int(parts[3])
+                    
+                    # Check if this is the button we're waiting for
+                    if (expected_button == "any" or 
+                        expected_button == button_pressed) and action == "pressed":
+                        return {
+                            "button_pressed": button_pressed,
+                            "timeout": False,
+                            "timestamp": timestamp,
+                            "waited_for": expected_button
+                        }
+            elif response.startswith("BUTTON_TIMEOUT|"):
+                # Parse: BUTTON_TIMEOUT|waited_for|timeout_duration
+                parts = response.split("|")
+                if len(parts) >= 3:
+                    return {
+                        "button_pressed": None,
+                        "timeout": True,
+                        "timestamp": None,
+                        "waited_for": parts[1],
+                        "timeout_duration": float(parts[2])
+                    }
+        # Continue reading if not a button response
 
 async def main():
     microbit_server = MicrobitMCPServer("/dev/tty.usbmodem2114202")
