@@ -61,6 +61,15 @@ class MicrobitMCPServer:
                     },
                     "required": []
                 }
+            ),
+            types.Tool(
+                name="get_temperature",
+                description="Get the current temperature reading from the micro:bit sensor",
+                inputSchema={
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                }
             )
         ]
 
@@ -82,25 +91,11 @@ class MicrobitMCPServer:
         timeout = arguments.get("timeout", 10.0)
         result = await self.wait_for_button_press(button, timeout)
         return [types.TextContent(type="text", text=json.dumps(result))]
+      if name == "get_temperature":
+        temperature_data = await self.get_temperature()
+        return [types.TextContent(type="text", text=json.dumps(temperature_data))]
       raise ValueError(f"Tool not found: {name}")
 
-    @self.app.list_resources()
-    async def list_resources() -> list[types.Resource]:
-        return [
-            types.Resource(
-                uri="microbit://temperature",
-                name="Temperature",
-                description="Current temperature reading from micro:bit sensor",
-                mimeType="application/json"
-            )
-        ]
-
-    @self.app.read_resource()
-    async def read_resource(uri: str) -> str:
-        if str(uri) == "microbit://temperature":
-          temperature_data = await self.get_temperature()
-          return json.dumps(temperature_data)
-        raise ValueError(f"Resource not found: {uri}")
   
   # micro:bit specific functions
   async def setup_serial_connection(self):
