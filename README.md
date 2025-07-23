@@ -8,29 +8,14 @@ An MCP (Model Context Protocol) server for the micro:bit that enables LLMs to in
 - **display_message**: Display text messages on the micro:bit LED matrix
 - **display_image**: Display custom images on the micro:bit LED matrix using a 5x5 grid format
 - **wait_for_button_press**: Wait for a button press on the micro:bit with optional button selection and timeout
-
-### Resources
-- **microbit://temperature**: Real-time temperature readings from the micro:bit's built-in temperature sensor
+- **get_temperature**: Return the real-time reading from the micro:bit's built-in temperature sensor
 
 ## Setup
 
-1. Flash the `main.py` program to your micro:bit
+1. Flash the `src/microbit/main.py` program to your micro:bit
 2. Connect the micro:bit via USB
-3. Run the MCP server: `python server.py`
+3. Run the MCP server: `uv run microbit-mcp`
 4. Configure your MCP client to connect to this server
-
-## Temperature Resource
-
-The temperature resource provides real-time temperature data in JSON format:
-
-```json
-{
-  "temperature_celsius": 25,
-  "timestamp": 1234567890
-}
-```
-
-Each request to the temperature resource triggers a fresh reading from the micro:bit's sensor, ensuring current data.
 
 ## Button Press Tool
 
@@ -116,5 +101,27 @@ To test/debug the server, you can also use the MCP Inspector. To launch the insp
 
 1. Run `npx @modelcontextprotocol/inspector` (recommend LTS-version of Node)
 2. The inspector will launch in a new browser window.
-3. Set transport type to STDIO, command is the full path to your uv binary (e.g., `/Users/yourname/.local/bin/uv`), arguments is `--directory /full-path-to-the-mcp-server run server.py`
+3. Set transport type to STDIO, command is the full path to your uv binary (e.g., `/Users/yourname/.local/bin/uv`), arguments is `--directory /full-path-to-the-mcp-server run microbit-mcp`
 4. Click on the Connect button to connect and inspect the MCP server.
+
+## Project Structure
+
+The project is organized as follows:
+
+```
+microbit-mcp/
+├── src/
+│   ├── mcp_server/             # Main MCP server package
+│   │   ├── server.py           # Main server entry point
+│   │   ├── microbit_client.py  # Serial communication with micro:bit
+│   │   ├── protocol.py         # Command/response protocol definitions
+│   │   └── tools/              # MCP tools organized by category
+│   │       ├── display.py      # Display-related tools
+│   │       ├── sensors.py      # Sensor-related tools
+│   │       └── input.py        # Input-related tools
+│   ├── microbit/               # Micro:bit firmware
+│   │   ├── main.py            # Firmware to flash to micro:bit
+│   │   └── README.md          # Micro:bit setup instructions
+│   └── examples/               # Usage examples
+└── README.md                   # This file
+```
