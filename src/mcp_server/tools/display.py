@@ -4,7 +4,6 @@ Display tools for micro:bit MCP server.
 This module contains tools for controlling the micro:bit LED matrix display.
 """
 
-import json
 import mcp.types as types
 from ..protocol import format_message_command, format_image_command
 

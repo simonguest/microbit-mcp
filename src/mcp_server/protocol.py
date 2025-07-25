@@ -5,6 +5,8 @@ This module defines the command and response formats used for serial
 communication between the MCP server and the micro:bit device.
 """
 
+import unicodedata
+
 # Command formats sent to micro:bit
 class Commands:
     MESSAGE = "MESSAGE:"
@@ -95,7 +97,20 @@ def parse_button_timeout_response(response: str) -> dict:
 
 def format_message_command(message: str) -> str:
     """Format a message command for the micro:bit."""
-    return f"{Commands.MESSAGE}{message}"
+    # Try to transliterate unicode to ASCII equivalents, then filter
+    try:
+        # Normalize and transliterate unicode characters
+        ascii_message = unicodedata.normalize('NFKD', message)
+        ascii_message = ascii_message.encode('ascii', 'ignore').decode('ascii')
+    except Exception:
+        # Fallback to simple ASCII filtering
+        ascii_message = ''.join(char for char in message if ord(char) < 128)
+    
+    # Truncate if too long (200 character limit)
+    if len(ascii_message) > 200:
+        ascii_message = ascii_message[:200]
+    
+    return f"{Commands.MESSAGE}{ascii_message}"
 
 def format_image_command(image: str) -> str:
     """Format an image command for the micro:bit."""
@@ -108,7 +123,3 @@ def format_temperature_command() -> str:
 def format_button_wait_command(button: str, timeout: float) -> str:
     """Format a button wait command for the micro:bit."""
     return f"{Commands.WAIT_BUTTON}{button}:{timeout}"
-
-def format_display_command(message: str) -> str:
-    """Format a display command for the micro:bit."""
-    return f"{Commands.DISPLAY}{message}"

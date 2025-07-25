@@ -11,7 +11,7 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 
 from .microbit_client import MicrobitClient
-from .protocol import format_display_command
+from .protocol import format_message_command
 from .tools import get_all_tools
 from .tools.display import handle_display_tool
 from .tools.sensors import handle_sensor_tool
@@ -62,7 +62,7 @@ class MicrobitMCPServer:
         """Set up the server and establish micro:bit connection."""
         await self.microbit_client.setup_serial_connection()
         # Send initial display message to indicate MCP server is ready
-        await self.microbit_client.send_command(format_display_command("MCP"))
+        await self.microbit_client.send_command(format_message_command("MCP"))
 
     async def run(self) -> None:
         """Run the MCP server."""
