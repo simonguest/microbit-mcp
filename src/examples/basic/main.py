@@ -32,7 +32,7 @@ async def main():
                 call_id = event.item.raw_item.call_id
                 args = event.item.raw_item.arguments
                 print(
-                    f"\033[33mCalling Tool:\033[0m {function_name} with args {args} ({call_id})"
+                    f"\033[33mTool Called:\033[0m {function_name} with args {args} ({call_id})"
                 )
             elif event.name == "tool_output":
                 call_id = event.item.raw_item["call_id"]
@@ -40,7 +40,7 @@ async def main():
                 print(f"\033[33mTool Output:\033[0m {output} ({call_id})")
             elif event.name == "message_output_created":
                 message = event.item.raw_item.content[0].text
-                print(f"\033[33mMessage from Agent:\033[0m {message}")
+                print(f"\033[33mMessage Output:\033[0m {message}")
 
     input("Press Enter to close the MCP Server...")
     await mcp_server.cleanup()
