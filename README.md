@@ -17,6 +17,52 @@ An MCP (Model Context Protocol) server for the micro:bit that enables LLMs to in
 3. Run the MCP server: `uv run microbit-mcp`
 4. Configure your MCP client to connect to this server
 
+### Command Line Options
+
+The MCP server supports several command-line options for configuration:
+
+```bash
+# Use default port (recommended for most users)
+uv run microbit-mcp
+
+# Specify a custom serial port
+uv run microbit-mcp --port /dev/tty.usbmodem1234
+uv run microbit-mcp -p COM3  # Windows example
+
+# List available serial ports to find your micro:bit
+uv run microbit-mcp --list-ports
+
+# Show help and usage information
+uv run microbit-mcp --help
+```
+
+#### Finding Your micro:bit Port
+
+If you're unsure which port your micro:bit is using, run:
+
+```bash
+uv run microbit-mcp --list-ports
+```
+
+This will show all available serial ports and highlight likely micro:bit devices. The output will look something like:
+
+```
+Available Serial Ports:
+
+Likely micro:bit devices:
+  /dev/cu.usbmodem2114202 - "BBC micro:bit CMSIS-DAP"
+    Hardware ID: USB VID:PID=0D28:0204
+
+All serial ports (3 found):
+  /dev/cu.usbmodem2114202 - "BBC micro:bit CMSIS-DAP" ⭐
+  /dev/cu.Bluetooth-Incoming-Port - Bluetooth-Incoming-Port
+  /dev/cu.usbserial-A1B2C3D4 - USB Serial Device
+
+Recommended: Use /dev/cu.usbmodem2114202 for your micro:bit
+```
+
+The ⭐ symbol indicates ports that are likely micro:bit devices.
+
 ## Button Press Tool
 
 The `wait_for_button_press` tool allows you to wait for button presses on the micro:bit with flexible configuration options.

@@ -5,10 +5,13 @@ This module provides the main MCP server that orchestrates communication
 between MCP clients and micro:bit devices.
 """
 
+import argparse
 import asyncio
+import sys
 import mcp.types as types
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
+import serial.tools.list_ports
 
 from .microbit_client import MicrobitClient
 from .protocol import format_message_command
@@ -21,7 +24,7 @@ from .tools.input import handle_input_tool
 class MicrobitMCPServer:
     """MCP Server for micro:bit interaction."""
 
-    def __init__(self, serial_port: str = "/dev/tty.usbmodem2114202"):
+    def __init__(self, serial_port: str = "/dev/cu.usbmodem2114202"):
         """
         Initialize the micro:bit MCP server.
 
@@ -76,9 +79,83 @@ class MicrobitMCPServer:
         await self.microbit_client.close()
 
 
-async def main():
+def list_serial_ports():
+    """List all available serial ports with micro:bit detection."""
+    ports = serial.tools.list_ports.comports()
+    
+    if not ports:
+        print("No serial ports found.")
+        return
+    
+    # Try to identify likely micro:bit devices
+    microbit_ports = []
+    for port in ports:
+        description = port.description.lower()
+        device = port.device.lower()
+        
+        # Check for micro:bit specific identifiers
+        if any(keyword in description for keyword in 
+               ['microbit', 'micro:bit', 'daplink', 'mbed']):
+            microbit_ports.append(port)
+        # Also check for common USB serial patterns that micro:bit uses
+        elif 'usb' in device and 'modem' in device:
+            microbit_ports.append(port)
+    
+    print("Available Serial Ports:")
+    print("=" * 50)
+    
+    if microbit_ports:
+        print("\nLikely micro:bit devices:")
+        for port in microbit_ports:
+            print(f"  {port.device} - {port.description}")
+            if port.hwid:
+                print(f"    Hardware ID: {port.hwid}")
+    
+    print(f"\nAll serial ports ({len(ports)} found):")
+    for port in ports:
+        marker = " ⭐" if port in microbit_ports else ""
+        print(f"  {port.device} - {port.description}{marker}")
+    
+    if microbit_ports:
+        print(f"\nRecommended: Use {microbit_ports[0].device} for your micro:bit")
+    else:
+        print("\nNo micro:bit devices detected. Make sure your micro:bit is:")
+        print("  - Connected via USB")
+        print("  - Powered on")
+        print("  - Has the correct firmware flashed")
+
+
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description="MCP Server for the micro:bit",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s                           # Use default port
+  %(prog)s -p /dev/tty.usbmodem1234  # Use specific port
+  %(prog)s --list-ports              # List available ports
+        """
+    )
+    
+    parser.add_argument(
+        "-p", "--port",
+        default="/dev/cu.usbmodem2114202",
+        help="Serial port for micro:bit connection (default: %(default)s)"
+    )
+    
+    parser.add_argument(
+        "--list-ports",
+        action="store_true",
+        help="List available serial ports and exit"
+    )
+    
+    return parser.parse_args()
+
+
+async def main(serial_port: str = "/dev/cu.usbmodem2114202"):
     """Main entry point for the micro:bit MCP server."""
-    server = MicrobitMCPServer("/dev/tty.usbmodem2114202")
+    server = MicrobitMCPServer(serial_port)
 
     try:
         await server.setup()
@@ -89,8 +166,14 @@ async def main():
 
 def cli_main():
     """Synchronous entry point for CLI."""
-    asyncio.run(main())
+    args = parse_arguments()
+    
+    if args.list_ports:
+        list_serial_ports()
+        sys.exit(0)
+    
+    asyncio.run(main(args.port))
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    cli_main()
