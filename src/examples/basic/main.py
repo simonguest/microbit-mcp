@@ -2,8 +2,9 @@ import asyncio
 from agents import Agent, Runner
 from agents.mcp import MCPServerStdio
 
+MICROBIT_PORT = "/dev/cu.usbmodem2114202"
 MCP_SERVER_COMMAND = "uv"
-MCP_SERVER_ARGS = ["run", "microbit-mcp"]
+MCP_SERVER_ARGS = ["run", "microbit-mcp", "-p", MICROBIT_PORT]
 
 
 async def main():
