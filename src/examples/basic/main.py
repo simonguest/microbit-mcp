@@ -15,7 +15,7 @@ mcp_server = MCPServerStdio(
 agent = Agent(
     name="micro:bit agent",
     model="gpt-4o",
-    instructions="You are a helpful assistant with access to a set of tools to control the micro:bit device.",
+    instructions="You are a helpful assistant with access to a set of tools to control the micro:bit device. When you reply, do not use emojis.",
     mcp_servers=[mcp_server],
 )
 
@@ -46,40 +46,19 @@ async def chat_with_agent(user_msg: str, history: list):
             )
         elif event.type == "run_item_stream_event":
             if event.item.type == "tool_call_item":
-                if event.item.raw_item.type == "file_search_call":
-                    responses.append(
-                        ChatMessage(
-                            content=f"Query used: {event.item.raw_item.queries}",
-                            metadata={
-                                "title": "File Search Completed",
-                                "parent_id": active_agent,
-                            },
-                        )
+                tool_name = getattr(event.item.raw_item, "name", "unknown_tool")
+                tool_args = getattr(event.item.raw_item, "arguments", {})
+                responses.append(
+                    ChatMessage(
+                        content=f"Calling tool {tool_name} with arguments {tool_args}",
+                        metadata={"title": "Tool Call", "parent_id": active_agent},
                     )
-                else:
-                    tool_name = getattr(event.item.raw_item, "name", "unknown_tool")
-                    tool_args = getattr(event.item.raw_item, "arguments", {})
-                    responses.append(
-                        ChatMessage(
-                            content=f"Calling tool {tool_name} with arguments {tool_args}",
-                            metadata={"title": "Tool Call", "parent_id": active_agent},
-                        )
-                    )
+                )
             if event.item.type == "tool_call_output_item":
                 responses.append(
                     ChatMessage(
                         content=f"Tool output: '{event.item.raw_item['output']}'",
                         metadata={"title": "Tool Output", "parent_id": active_agent},
-                    )
-                )
-            if event.item.type == "handoff_call_item":
-                responses.append(
-                    ChatMessage(
-                        content=f"Name: {event.item.raw_item.name}",
-                        metadata={
-                            "title": "Handing Off Request",
-                            "parent_id": active_agent,
-                        },
                     )
                 )
         yield responses
