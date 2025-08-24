@@ -8,3 +8,6 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Gradio flagged messages and other output
+.gradio

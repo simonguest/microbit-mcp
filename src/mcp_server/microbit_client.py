@@ -7,7 +7,7 @@ including connection management and protocol handling.
 
 import asyncio
 import serial_asyncio
-from typing import Optional, Tuple
+from typing import Optional
 
 from .protocol import (
     Responses,

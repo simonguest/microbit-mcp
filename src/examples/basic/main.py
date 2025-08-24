@@ -1,51 +1,104 @@
-import asyncio
+import gradio as gr
+from gradio import ChatMessage
+
 from agents import Agent, Runner
 from agents.mcp import MCPServerStdio
 
-MICROBIT_PORT = "/dev/cu.usbmodem2114202"
+MICROBIT_PORT = "/dev/cu.usbmodem102"
 MCP_SERVER_COMMAND = "uv"
 MCP_SERVER_ARGS = ["run", "microbit-mcp", "-p", MICROBIT_PORT]
 
+mcp_server = MCPServerStdio(
+    params={"command": MCP_SERVER_COMMAND, "args": MCP_SERVER_ARGS}
+)
 
-async def main():
-    mcp_server = MCPServerStdio(
-        params={"command": MCP_SERVER_COMMAND, "args": MCP_SERVER_ARGS}
-    )
+agent = Agent(
+    name="micro:bit agent",
+    model="gpt-4o",
+    instructions="You are a helpful assistant with access to a set of tools to control the micro:bit device.",
+    mcp_servers=[mcp_server],
+)
 
-    await mcp_server.connect()
+async def chat_with_agent(user_msg: str, history: list):
+    if mcp_server.session is None:
+        await mcp_server.connect()
+    messages = [{"role": msg["role"], "content": msg["content"]} for msg in history]
+    messages.append({"role": "user", "content": user_msg})
+    responses = []
+    reply_created = False
+    active_agent = None
 
-    agent = Agent(
-        name="micro:bit agent",
-        model="gpt-4o",
-        instructions="You are a helpful assistant with access to a set of tools to control the micro:bit device.",
-        mcp_servers=[mcp_server],
-    )
-
-    # Main prompt for the agent
-    prompt = "Display the temperature from the micro:bit on the LED matrix"
-
-    result = Runner.run_streamed(agent, prompt)
-
+    result = Runner.run_streamed(agent, messages)
     async for event in result.stream_events():
-        if event.type == "run_item_stream_event":
-            if event.name == "tool_called":
-                function_name = event.item.raw_item.name
-                call_id = event.item.raw_item.call_id
-                args = event.item.raw_item.arguments
-                print(
-                    f"\033[33mTool Called:\033[0m {function_name} with args {args} ({call_id})"
+        if event.type == "raw_response_event":
+            if event.data.type == "response.output_text.delta":
+                if not reply_created:
+                    responses.append(ChatMessage(role="assistant", content=""))
+                    reply_created = True
+                responses[-1].content += event.data.delta
+        elif event.type == "agent_updated_stream_event":
+            active_agent = event.new_agent.name
+            responses.append(
+                ChatMessage(
+                    content=event.new_agent.name,
+                    metadata={"title": "Agent Now Running", "id": active_agent},
                 )
-            elif event.name == "tool_output":
-                call_id = event.item.raw_item["call_id"]
-                output = event.item.raw_item["output"]
-                print(f"\033[33mTool Output:\033[0m {output} ({call_id})")
-            elif event.name == "message_output_created":
-                message = event.item.raw_item.content[0].text
-                print(f"\033[33mMessage Output:\033[0m {message}")
+            )
+        elif event.type == "run_item_stream_event":
+            if event.item.type == "tool_call_item":
+                if event.item.raw_item.type == "file_search_call":
+                    responses.append(
+                        ChatMessage(
+                            content=f"Query used: {event.item.raw_item.queries}",
+                            metadata={
+                                "title": "File Search Completed",
+                                "parent_id": active_agent,
+                            },
+                        )
+                    )
+                else:
+                    tool_name = getattr(event.item.raw_item, "name", "unknown_tool")
+                    tool_args = getattr(event.item.raw_item, "arguments", {})
+                    responses.append(
+                        ChatMessage(
+                            content=f"Calling tool {tool_name} with arguments {tool_args}",
+                            metadata={"title": "Tool Call", "parent_id": active_agent},
+                        )
+                    )
+            if event.item.type == "tool_call_output_item":
+                responses.append(
+                    ChatMessage(
+                        content=f"Tool output: '{event.item.raw_item['output']}'",
+                        metadata={"title": "Tool Output", "parent_id": active_agent},
+                    )
+                )
+            if event.item.type == "handoff_call_item":
+                responses.append(
+                    ChatMessage(
+                        content=f"Name: {event.item.raw_item.name}",
+                        metadata={
+                            "title": "Handing Off Request",
+                            "parent_id": active_agent,
+                        },
+                    )
+                )
+        yield responses
 
-    input("Press Enter to close the MCP Server...")
-    await mcp_server.cleanup()
-
+demo = gr.ChatInterface(
+    chat_with_agent,
+    title="micro:bit MCP",
+    theme=gr.themes.Soft(
+        primary_hue="red", secondary_hue="slate", font=[gr.themes.GoogleFont("Inter")]
+    ),
+    examples=[
+        "Can you display a 'heart' on the display?",
+    ],
+    submit_btn=True,
+    flagging_mode="manual",
+    flagging_options=["Like", "Spam", "Inappropriate", "Other"],
+    type="messages",
+    save_history=False,
+)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    demo.launch(server_name="0.0.0.0", server_port=7860)
