@@ -1,6 +1,7 @@
 # type: ignore
 # main.py for micro:bit
 from microbit import *
+import music
 
 def send_status_event(message):
     """Send status event"""
@@ -36,6 +37,18 @@ def process_command(cmd):
             waiting_for_button = True
             wait_start_time = running_time()
             send_status_event("waiting_for_button:" + wait_button_type)
+    if cmd.startswith("MUSIC:"):
+        # Parse: MUSIC:note1,note2,note3...
+        notes_str = cmd[6:]  # Remove "MUSIC:" prefix
+        if notes_str:
+            notes = notes_str.split(",")
+            try:
+                music.play(notes)  # This blocks until music finishes
+                send_status_event("music_played:" + str(len(notes)) + "_notes")
+            except Exception as e:
+                send_status_event("music_error:" + str(e))
+        else:
+            send_status_event("music_error:no_notes_provided")
 
 def send_button_event(button, action):
     """Send button event"""

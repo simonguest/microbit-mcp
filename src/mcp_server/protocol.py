@@ -14,6 +14,7 @@ class Commands:
     TEMP = "TEMP:"
     WAIT_BUTTON = "WAIT_BUTTON:"
     DISPLAY = "DISPLAY:"
+    MUSIC = "MUSIC:"
 
 # Response formats received from micro:bit
 class Responses:
@@ -123,3 +124,9 @@ def format_temperature_command() -> str:
 def format_button_wait_command(button: str, timeout: float) -> str:
     """Format a button wait command for the micro:bit."""
     return f"{Commands.WAIT_BUTTON}{button}:{timeout}"
+
+def format_music_command(notes: list) -> str:
+    """Format a music command for the micro:bit."""
+    # Join notes with comma separator
+    notes_str = ",".join(notes)
+    return f"{Commands.MUSIC}{notes_str}"

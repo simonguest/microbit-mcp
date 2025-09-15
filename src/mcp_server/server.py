@@ -18,12 +18,13 @@ from .tools import get_all_tools
 from .tools.display import handle_display_tool
 from .tools.sensors import handle_sensor_tool
 from .tools.input import handle_input_tool
+from .tools.music import handle_music_tool
 
 
 class MicrobitMCPServer:
     """MCP Server for micro:bit interaction."""
 
-    def __init__(self, serial_port: str = "/dev/cu.usbmodem2114202"):
+    def __init__(self, serial_port: str = "/dev/cu.usbmodem211102"):
         """
         Initialize the micro:bit MCP server.
 
@@ -56,6 +57,10 @@ class MicrobitMCPServer:
             # Input tools
             elif name in ["wait_for_button_press"]:
                 return await handle_input_tool(name, arguments, self.microbit_client)
+
+            # Music tools
+            elif name in ["play_music"]:
+                return await handle_music_tool(name, arguments, self.microbit_client)
 
             else:
                 raise ValueError(f"Tool not found: {name}")
